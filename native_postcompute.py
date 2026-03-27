@@ -1,6 +1,6 @@
 import hashlib
 import base64
-import cbrrr
+import dag_cbor
 import json
 
 import secp256k1
@@ -24,7 +24,7 @@ def main(expected_did: str, handle_tweak: str, k_inv: int):
 		"verificationMethods": {},
 	}
 	#print(cbrrr.encode_dag_cbor(genesis))
-	z = int.from_bytes(hashlib.sha256(cbrrr.encode_dag_cbor(genesis)).digest(), "big")
+	z = int.from_bytes(hashlib.sha256(dag_cbor.encode(genesis)).digest(), "big")
 
 	k = pow(k_inv, -1, secp256k1.n)
 	R = secp256k1.G.scalar_mul(k)
@@ -37,7 +37,7 @@ def main(expected_did: str, handle_tweak: str, k_inv: int):
 	raw_sig = r.to_bytes(32, "big") + s.to_bytes(32, "big")
 
 	genesis["sig"] = base64.urlsafe_b64encode(raw_sig).rstrip(b"=").decode()
-	signed_msg = cbrrr.encode_dag_cbor(genesis)
+	signed_msg = dag_cbor.encode(genesis)
 	digest = hashlib.sha256(signed_msg).digest()
 	plc = base64.b32encode(digest[:15]).lower().decode()
 
@@ -47,7 +47,7 @@ def main(expected_did: str, handle_tweak: str, k_inv: int):
 
 	#print("did:plc:" + plc)
 
-	signed_genesis = cbrrr.decode_dag_cbor(signed_msg)
+	signed_genesis = dag_cbor.decode(signed_msg)
 	outpath = f"signed_genesis_{plc}.json"
 	with open(outpath, "w") as json_out:
 		json.dump(signed_genesis, json_out, indent=4)
@@ -59,7 +59,7 @@ def main(expected_did: str, handle_tweak: str, k_inv: int):
 			int.from_bytes(raw_sig[:32], "big"),
 			int.from_bytes(raw_sig[32:], "big")
 		),
-		cbrrr.encode_dag_cbor(signed_genesis),
+		dag_cbor.encode(signed_genesis),
 		util.ECDSA_SHA256
 	)
 
